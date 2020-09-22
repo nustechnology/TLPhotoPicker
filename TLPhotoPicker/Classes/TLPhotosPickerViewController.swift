@@ -146,6 +146,9 @@ open class TLPhotosPickerViewController: UIViewController {
     @IBOutlet open var emptyImageView: UIImageView!
     @IBOutlet open var emptyMessageLabel: UILabel!
     @IBOutlet open var photosButton: UIBarButtonItem!
+    @IBOutlet weak var bottomSheetView: UIView!
+    @IBOutlet weak var playerViewSelected: TLPlayerView!
+    @IBOutlet weak var nextButton: UIButton!
     
     public weak var delegate: TLPhotosPickerViewControllerDelegate? = nil
     public weak var logDelegate: TLPhotosPickerLogDelegate? = nil
@@ -300,6 +303,8 @@ open class TLPhotosPickerViewController: UIViewController {
     
     override open func viewDidLoad() {
         super.viewDidLoad()
+        nextButton.layer.cornerRadius = 2
+        nextButton.clipsToBounds = true
         makeUI()
         checkAuthorization()
     }
@@ -388,6 +393,7 @@ extension TLPhotosPickerViewController {
         self.thumbnailSize = CGSize(width: width, height: width)
         layout.itemSize = self.thumbnailSize
         self.collectionView.collectionViewLayout = layout
+        self.collectionView.contentInset = UIEdgeInsets(top: 0, left: 5, bottom: 180, right: 5)
         self.placeholderThumbnail = centerAtRect(image: self.configure.placeholderIcon, rect: CGRect(x: 0, y: 0, width: width, height: width))
         self.cameraImage = centerAtRect(image: self.configure.cameraIcon, rect: CGRect(x: 0, y: 0, width: width, height: width), bgColor: self.configure.cameraBgColor)
     }
