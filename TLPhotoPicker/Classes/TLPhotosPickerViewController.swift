@@ -76,6 +76,7 @@ public struct TLPhotosPickerConfigure {
     public var preventAutomaticLimitedAccessAlert = true
     public var mediaType: PHAssetMediaType? = nil
     public var numberOfColumn = 3
+    public var spacingBetweenItems = CGFloat(2)
     public var singleSelectedMode = false
     public var maxSelectedAssets: Int? = nil
     public var fetchOption: PHFetchOptions? = nil
@@ -311,7 +312,16 @@ open class TLPhotosPickerViewController: UIViewController {
         super.viewDidLoad()
         nextButton.layer.cornerRadius = 2
         nextButton.clipsToBounds = true
-        self.bottomSheetView.isHidden = true
+        [imageViewSelected, playerViewSelected].forEach{
+            $0?.layer.cornerRadius = 3
+            $0?.clipsToBounds = true
+        }
+        if self.selectedAssets.count > 0, let asset = self.selectedAssets.last{
+            self.bottomSheetView.fadeIn()
+            self.showBottomSheet(video: asset)
+        }else{
+            self.bottomSheetView.fadeOut()
+        }
         makeUI()
         checkAuthorization()
     }
@@ -396,11 +406,14 @@ extension TLPhotosPickerViewController {
             return
         }
         let count = CGFloat(self.configure.numberOfColumn)
-        let width = (self.view.frame.size.width-(5*(count-1)))/count
+        let spacingBetweenItems = max(0, configure.spacingBetweenItems)
+        let width = (self.view.frame.size.width-(spacingBetweenItems*(count-1)))/count
         self.thumbnailSize = CGSize(width: width, height: width)
         layout.itemSize = self.thumbnailSize
+        layout.minimumInteritemSpacing = spacingBetweenItems
+        layout.minimumLineSpacing = spacingBetweenItems
         self.collectionView.collectionViewLayout = layout
-        self.collectionView.contentInset = UIEdgeInsets(top: 0, left: 5, bottom: 180, right: 5)
+        self.collectionView.contentInset = UIEdgeInsets(top: 0, left: 2, bottom: 180, right: 2)
         self.placeholderThumbnail = centerAtRect(image: self.configure.placeholderIcon, rect: CGRect(x: 0, y: 0, width: width, height: width))
         self.cameraImage = centerAtRect(image: self.configure.cameraIcon, rect: CGRect(x: 0, y: 0, width: width, height: width), bgColor: self.configure.cameraBgColor)
     }
@@ -418,8 +431,6 @@ extension TLPhotosPickerViewController {
         self.titleView.addGestureRecognizer(tapGesture)
         self.titleLabel.text = self.configure.customLocalizedTitle["Camera Roll"]
         self.subTitleLabel.text = self.configure.tapHereToChange
-        self.subTitleLabel.isHidden = self.configure.isHiddenSubTitleLabel
-        self.subTitleStackView.isHidden = self.configure.isHiddenSubTitleLabel
         self.cancelButton.title = self.configure.cancelTitle
         self.doneButton.title = self.configure.doneTitle
         self.doneButton.setTitleTextAttributes([NSAttributedString.Key.font: UIFont.boldSystemFont(ofSize: UIFont.labelFontSize)], for: .normal)
@@ -430,6 +441,9 @@ extension TLPhotosPickerViewController {
         self.albumPopView.tableView.dataSource = self
         self.popArrowImageView.image = TLBundle.podBundleImage(named: "pop_arrow")
         self.subTitleArrowImageView.image = TLBundle.podBundleImage(named: "arrow")
+        self.subTitleLabel.isHidden = self.configure.isHiddenSubTitleLabel
+        self.subTitleArrowImageView.isHidden = self.configure.isHiddenSubTitleLabel
+        self.subTitleStackView.isHidden = self.configure.isHiddenSubTitleLabel
         if #available(iOS 10.0, *), self.usedPrefetch {
             self.collectionView.isPrefetchingEnabled = true
             self.collectionView.prefetchDataSource = self
@@ -453,7 +467,11 @@ extension TLPhotosPickerViewController {
     
     private func updateTitle() {
         guard self.focusedCollection != nil else { return }
-        self.titleLabel.text = self.focusedCollection?.title
+        if(self.configure.isHiddenSubTitleLabel){
+            self.titleLabel.text = self.configure.customLocalizedTitle["Camera Roll"]
+        }else{
+            self.titleLabel.text = self.focusedCollection?.title
+        }
         updatePresentLimitedLibraryButton()
     }
     
@@ -728,7 +746,7 @@ extension TLPhotosPickerViewController: UIImagePickerControllerDelegate, UINavig
     }
     
     func showBottomSheet(video: TLPHAsset){
-        self.bottomSheetView.isHidden = false
+        self.bottomSheetView.fadeIn()
         self.videoDurationSelected.text = timeFormatted(timeInterval: video.phAsset?.duration ?? 0.0)
         self.photoLibrary.imageAsset(asset: video.phAsset!, size: thumbnailSize, completionBlock: {  (image,complete) in
             DispatchQueue.main.async {
@@ -1371,5 +1389,28 @@ extension UIImage {
         }
         UIGraphicsEndImageContext()
         return result ?? self
+    }
+}
+
+extension UIView {
+    func fadeIn(duration: TimeInterval = 0.3, delay: TimeInterval = 0.0, completion: @escaping ((Bool) -> Void) = {(finished: Bool) -> Void in }) {
+        if(self.isHidden == false) {return}
+        self.alpha = 0.0
+        
+        UIView.animate(withDuration: duration, delay: delay, options: UIView.AnimationOptions.curveEaseIn, animations: {
+            self.isHidden = false
+            self.alpha = 1.0
+        }, completion: completion)
+    }
+    
+    func fadeOut(duration: TimeInterval = 0.3, delay: TimeInterval = 0.0, completion: @escaping (Bool) -> Void = {(finished: Bool) -> Void in }) {
+        self.alpha = 1.0
+        
+        UIView.animate(withDuration: duration, delay: delay, options: UIView.AnimationOptions.curveEaseIn, animations: {
+            self.alpha = 0.0
+        }) { (completed) in
+            self.isHidden = true
+            completion(true)
+        }
     }
 }
