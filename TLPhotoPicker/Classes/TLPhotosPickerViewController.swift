@@ -318,6 +318,7 @@ open class TLPhotosPickerViewController: UIViewController {
         }
         if self.selectedAssets.count > 0, let asset = self.selectedAssets.last{
             self.bottomSheetView.fadeIn()
+            
             self.showBottomSheet(video: asset)
         }else{
             self.bottomSheetView.fadeOut()
@@ -413,7 +414,7 @@ extension TLPhotosPickerViewController {
         layout.minimumInteritemSpacing = spacingBetweenItems
         layout.minimumLineSpacing = spacingBetweenItems
         self.collectionView.collectionViewLayout = layout
-        self.collectionView.contentInset = UIEdgeInsets(top: 0, left: 2, bottom: 180, right: 2)
+        self.collectionView.contentInset = UIEdgeInsets(top: 0, left: 0, bottom: 180, right: 0)
         self.placeholderThumbnail = centerAtRect(image: self.configure.placeholderIcon, rect: CGRect(x: 0, y: 0, width: width, height: width))
         self.cameraImage = centerAtRect(image: self.configure.cameraIcon, rect: CGRect(x: 0, y: 0, width: width, height: width), bgColor: self.configure.cameraBgColor)
     }
@@ -748,7 +749,13 @@ extension TLPhotosPickerViewController: UIImagePickerControllerDelegate, UINavig
     func showBottomSheet(video: TLPHAsset){
         self.bottomSheetView.fadeIn()
         self.videoDurationSelected.text = timeFormatted(timeInterval: video.phAsset?.duration ?? 0.0)
-        self.photoLibrary.imageAsset(asset: video.phAsset!, size: thumbnailSize, completionBlock: {  (image,complete) in
+        var tempSize: CGSize = CGSize.zero
+        if self.thumbnailSize == CGSize.zero {
+            tempSize = CGSize(width: 57, height: 57)
+        }else{
+            tempSize = self.thumbnailSize
+        }
+        self.photoLibrary.imageAsset(asset: video.phAsset!, size: tempSize, completionBlock: {  (image,complete) in
             DispatchQueue.main.async {
                 self.imageViewSelected.image = image
             }
@@ -1356,7 +1363,7 @@ extension TLPhotosPickerViewController {
             if asset.type != .photo, configure.autoPlay {
                 playVideo(asset: asset, indexPath: indexPath)
             }
-            var result = TLPHAsset(asset: asset.phAsset)
+            let result = TLPHAsset(asset: asset.phAsset)
             self.showBottomSheet(video: result)
         }
 
