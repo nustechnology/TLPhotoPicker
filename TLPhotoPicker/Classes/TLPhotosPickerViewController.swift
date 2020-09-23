@@ -91,6 +91,10 @@ public struct TLPhotosPickerConfigure {
     public var groupByFetch: PHFetchedResultGroupedBy? = nil
     public var supportedInterfaceOrientations: UIInterfaceOrientationMask = .portrait
     public var popup: [PopupConfigure] = []
+    public var isShowPopup = false
+    public var isHiddenSubTitleLabel = true
+    public var isHiddenDoneButton = true
+    public var isDisableDeselectedPhoto = true
     public init() {
         
     }
@@ -149,7 +153,9 @@ open class TLPhotosPickerViewController: UIViewController {
     @IBOutlet weak var bottomSheetView: UIView!
     @IBOutlet weak var playerViewSelected: TLPlayerView!
     @IBOutlet weak var nextButton: UIButton!
+    @IBOutlet weak var imageViewSelected: UIImageView!
     
+    @IBOutlet weak var videoDurationSelected: UILabel!
     public weak var delegate: TLPhotosPickerViewControllerDelegate? = nil
     public weak var logDelegate: TLPhotosPickerLogDelegate? = nil
     open var selectedAssets = [TLPHAsset]()
@@ -411,6 +417,8 @@ extension TLPhotosPickerViewController {
         self.titleView.addGestureRecognizer(tapGesture)
         self.titleLabel.text = self.configure.customLocalizedTitle["Camera Roll"]
         self.subTitleLabel.text = self.configure.tapHereToChange
+        self.subTitleLabel.isHidden = self.configure.isHiddenSubTitleLabel
+        self.subTitleStackView.isHidden = self.configure.isHiddenSubTitleLabel
         self.cancelButton.title = self.configure.cancelTitle
         self.doneButton.title = self.configure.doneTitle
         self.doneButton.setTitleTextAttributes([NSAttributedString.Key.font: UIFont.boldSystemFont(ofSize: UIFont.labelFontSize)], for: .normal)
@@ -436,9 +444,9 @@ extension TLPhotosPickerViewController {
     
     private func updatePresentLimitedLibraryButton() {
         if #available(iOS 14.0, *), self.photoLibrary.limitMode && self.configure.preventAutomaticLimitedAccessAlert {
-            self.customNavItem.rightBarButtonItems = [self.doneButton, self.photosButton]
+            self.customNavItem.rightBarButtonItems = self.configure.isHiddenDoneButton ? [self.photosButton] : [self.doneButton, self.photosButton]
         } else {
-            self.customNavItem.rightBarButtonItems = [self.doneButton]
+            self.customNavItem.rightBarButtonItems = self.configure.isHiddenDoneButton ? [] : [self.doneButton]
         }
     }
     
@@ -520,7 +528,7 @@ extension TLPhotosPickerViewController {
     // User Action
     @objc func titleTap() {
         guard collections.count > 0 else { return }
-        self.albumPopView.show(self.albumPopView.isHidden, duration: self.configure.popup.duration)
+        self.albumPopView.show(self.albumPopView.isHidden && self.configure.isShowPopup, duration: self.configure.popup.duration)
     }
     
     @IBAction open func cancelButtonTap() {
@@ -704,12 +712,38 @@ extension TLPhotosPickerViewController: UIImagePickerControllerDelegate, UINavig
                     result.selectedOrder = self.selectedAssets.count + 1
                     result.isSelectedFromCamera = true
                     self.selectedAssets.append(result)
+                    self.showBottomSheet(video: result)
                     self.logDelegate?.selectedPhoto(picker: self, at: 1)
                 }
             }
         }
         
         picker.dismiss(animated: true, completion: nil)
+    }
+    
+    func showBottomSheet(video: TLPHAsset){
+        self.bottomSheetView.isHidden = false
+        self.videoDurationSelected.text = timeFormatted(timeInterval: video.phAsset?.duration ?? 0.0)
+        self.photoLibrary.imageAsset(asset: video.phAsset!, size: thumbnailSize, completionBlock: {  (image,complete) in
+            DispatchQueue.main.async {
+                self.imageViewSelected.image = image
+            }
+        })
+
+        
+    }
+    func timeFormatted(timeInterval: TimeInterval) -> String {
+        let seconds: Int = lround(timeInterval)
+        var hour: Int = 0
+        var minute: Int = Int(seconds/60)
+        let second: Int = seconds % 60
+        if minute > 59 {
+            hour = minute / 60
+            minute = minute % 60
+            return String(format: "%d:%d:%02d", hour, minute, second)
+        } else {
+            return String(format: "%d:%02d", minute, second)
+        }
     }
 }
 
@@ -1263,6 +1297,7 @@ extension TLPhotosPickerViewController {
         
         if let index = selectedAssets.firstIndex(where: { $0.phAsset == asset.phAsset }) {
         //deselect
+            if (self.configure.isDisableDeselectedPhoto) {return}
             logDelegate?.deselectedPhoto(picker: self, at: indexPath.row)
             selectedAssets.remove(at: index)
             #if swift(>=4.1)
