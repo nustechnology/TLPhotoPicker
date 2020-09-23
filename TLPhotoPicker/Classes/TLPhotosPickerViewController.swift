@@ -311,6 +311,7 @@ open class TLPhotosPickerViewController: UIViewController {
         super.viewDidLoad()
         nextButton.layer.cornerRadius = 2
         nextButton.clipsToBounds = true
+        self.bottomSheetView.isHidden = true
         makeUI()
         checkAuthorization()
     }
@@ -545,6 +546,11 @@ extension TLPhotosPickerViewController {
         if #available(iOS 14.0, *) {
             PHPhotoLibrary.shared().presentLimitedLibraryPicker(from: self)
         }
+    }
+    
+    @IBAction open func nextButtonTap() {
+        self.stopPlay()
+        self.dismiss(done: true)
     }
     
     private func dismiss(done: Bool) {
@@ -1332,6 +1338,8 @@ extension TLPhotosPickerViewController {
             if asset.type != .photo, configure.autoPlay {
                 playVideo(asset: asset, indexPath: indexPath)
             }
+            var result = TLPHAsset(asset: asset.phAsset)
+            self.showBottomSheet(video: result)
         }
 
     }
