@@ -96,6 +96,7 @@ public struct TLPhotosPickerConfigure {
     public var isHiddenSubTitleLabel = true
     public var isHiddenDoneButton = true
     public var isDisableDeselectedPhoto = true
+    public var collectionViewContentInset = UIEdgeInsets(top: 0, left: 2, bottom: 180, right: 2)
     public init() {
         
     }
@@ -414,7 +415,7 @@ extension TLPhotosPickerViewController {
         layout.minimumInteritemSpacing = spacingBetweenItems
         layout.minimumLineSpacing = spacingBetweenItems
         self.collectionView.collectionViewLayout = layout
-        self.collectionView.contentInset = UIEdgeInsets(top: 0, left: 0, bottom: 180, right: 0)
+        self.collectionView.contentInset = configure.collectionViewContentInset
         self.placeholderThumbnail = centerAtRect(image: self.configure.placeholderIcon, rect: CGRect(x: 0, y: 0, width: width, height: width))
         self.cameraImage = centerAtRect(image: self.configure.cameraIcon, rect: CGRect(x: 0, y: 0, width: width, height: width), bgColor: self.configure.cameraBgColor)
     }
