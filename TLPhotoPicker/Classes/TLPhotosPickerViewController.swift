@@ -158,6 +158,15 @@ open class TLPhotosPickerViewController: UIViewController {
     @IBOutlet weak var imageViewSelected: UIImageView!
     
     @IBOutlet weak var videoDurationSelected: UILabel!
+    
+    var btnChoosePhoto: UIButton = {
+       let button = UIButton()
+        button.setTitle("Choose Photo", for: .normal)
+        button.backgroundColor = UIColor.init(red: 95/255, green: 23/255, blue: 255/255, alpha: 1.0)
+        button.translatesAutoresizingMaskIntoConstraints = false
+        return button
+    }()
+    
     public weak var delegate: TLPhotosPickerViewControllerDelegate? = nil
     public weak var logDelegate: TLPhotosPickerLogDelegate? = nil
     open var selectedAssets = [TLPHAsset]()
@@ -311,18 +320,35 @@ open class TLPhotosPickerViewController: UIViewController {
     
     override open func viewDidLoad() {
         super.viewDidLoad()
+        
+        self.view.addSubview(btnChoosePhoto)
+        btnChoosePhoto.addTarget(self, action: #selector(choosePhotoDidTap), for: .touchUpInside)
+
+        NSLayoutConstraint.activate([
+            btnChoosePhoto.heightAnchor.constraint(equalToConstant: 44),
+            btnChoosePhoto.leadingAnchor.constraint(equalTo: view.leadingAnchor, constant: 35),
+            btnChoosePhoto.trailingAnchor.constraint(equalTo: view.trailingAnchor, constant: -35),
+            btnChoosePhoto.bottomAnchor.constraint(equalTo: view.bottomAnchor, constant: -32)
+        ])
+        
         nextButton.layer.cornerRadius = 2
         nextButton.clipsToBounds = true
-        [imageViewSelected, playerViewSelected].forEach{
+        [imageViewSelected, playerViewSelected, btnChoosePhoto].forEach{
             $0?.layer.cornerRadius = 3
             $0?.clipsToBounds = true
         }
         if self.selectedAssets.count > 0, let asset = self.selectedAssets.last{
-            self.bottomSheetView.fadeIn()
-            
-            self.showBottomSheet(video: asset)
+            if (asset.type != .photo){
+                self.btnChoosePhoto.isHidden = true
+                self.bottomSheetView.fadeIn()
+                self.showBottomSheet(video: asset)
+            }else{
+                self.bottomSheetView.fadeOut()
+                self.showSelectedPhotoButton(photo: asset)
+            }
         }else{
             self.bottomSheetView.fadeOut()
+            self.btnChoosePhoto.isHidden = true
         }
         makeUI()
         checkAuthorization()
@@ -573,6 +599,10 @@ extension TLPhotosPickerViewController {
         self.dismiss(done: true)
     }
     
+    @objc open func choosePhotoDidTap(){
+        
+    }
+    
     private func dismiss(done: Bool) {
         var shouldDismiss = true
         if done {
@@ -738,13 +768,23 @@ extension TLPhotosPickerViewController: UIImagePickerControllerDelegate, UINavig
                     result.selectedOrder = self.selectedAssets.count + 1
                     result.isSelectedFromCamera = true
                     self.selectedAssets.append(result)
-                    self.showBottomSheet(video: result)
+                    if asset.mediaType != .image{
+                        self.btnChoosePhoto.isHidden = true
+                        self.showBottomSheet(video: result)
+                    }else{
+                        self.bottomSheetView.fadeOut()
+                        self.btnChoosePhoto.isHidden = false
+                    }
                     self.logDelegate?.selectedPhoto(picker: self, at: 1)
                 }
             }
         }
         
         picker.dismiss(animated: true, completion: nil)
+    }
+    
+    func showSelectedPhotoButton(photo: TLPHAsset){
+        self.btnChoosePhoto.isHidden = false
     }
     
     func showBottomSheet(video: TLPHAsset){
@@ -1365,7 +1405,13 @@ extension TLPhotosPickerViewController {
                 playVideo(asset: asset, indexPath: indexPath)
             }
             let result = TLPHAsset(asset: asset.phAsset)
-            self.showBottomSheet(video: result)
+            if asset.type == .photo{
+                self.btnChoosePhoto.isHidden = false
+                self.bottomSheetView.fadeOut()
+            }else{
+                self.btnChoosePhoto.isHidden = true
+                self.showBottomSheet(video: result)
+            }
         }
 
     }
