@@ -1394,7 +1394,10 @@ extension TLPhotosPickerViewController {
         } else {
         //select
             logDelegate?.selectedPhoto(picker: self, at: indexPath.row)
-            guard !maxCheck(), canSelect(phAsset: phAsset) else { return }
+            guard !maxCheck(), canSelect(phAsset: phAsset) else {
+                self.bottomSheetView.fadeOut()
+                return
+            }
             
             asset.selectedOrder = selectedAssets.count + 1
             selectedAssets.append(asset)
